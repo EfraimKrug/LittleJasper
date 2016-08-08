@@ -53,7 +53,13 @@ function isEq(atom1, atom2){
 }
 
 function isEqual(s1, s2){
-
+  if(isAtom(s1) && isAtom(s2)){
+    return isEq(s1, s2);
+  }
+  if(nonAtom(s1) && nonAtom(s2)){
+    return isEqualList(s1,s2);
+  }
+  return false;
 }
 
 function isEqualList(list1, list2){
@@ -107,12 +113,21 @@ function isMember(a, list){
 // removing memebers
 //
 
+//
+// This rember function will remove highest level S-expressions
+//
 function rember (a, list){
   //console.log('rember: {' + a + "}" + list );
   if(isNull(list)) return [];
-  if(isEq(a, car(list))){
-    return cdr(list);
-  }
+  //if(nonAtom(car(list))){
+    if(isEqual(car(list), a)){
+        return cdr(list);
+    }
+    return cons(car(list), rember(a, cdr(list)));
+  //}
+  //if(isEqual(a, car(list))){
+  //  return cdr(list);
+  //}
 
   return cons(car(list), rember(a, cdr(list)));
 }
@@ -403,9 +418,14 @@ var listX4 = ['thisX'];
 var listX5 = 'thisX';
 var listX6 = [1,2,3,4,5,6,7];
 
+printList(listX2);
+printList(rember(['a','b','c',[1,2,3,'b'],'d'], listX2));
+printList(rember(['x','y',['b',['b',1]],['a','b','c']], listX2));
+printList(rember('x', listX2));
+
 //console.log(memberStar(3, listX6));
-console.log(isEqualList(listX2, listX2a));
-console.log(isEqualList(listX3, listX3));
+//console.log(isEqualList(listX2, listX2a));
+//console.log(isEqualList(listX3, listX3));
 //printList(listX2);
 //printList(substStar('b', 'Stuff', listX2));
 
