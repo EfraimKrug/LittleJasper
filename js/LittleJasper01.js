@@ -52,6 +52,10 @@ function isEq(atom1, atom2){
   return atom1 == atom2;
 }
 
+function isEqual(s1, s2){
+
+}
+
 function isEqualList(list1, list2){
   if(isNull(list1) && isNull(list2)) return true;
   if(isNull(list1)) return false;
@@ -102,25 +106,22 @@ function isMember(a, list){
 //
 // removing memebers
 //
+
 function rember (a, list){
   //console.log('rember: {' + a + "}" + list );
   if(isNull(list)) return [];
   if(isEq(a, car(list))){
     return cdr(list);
   }
-  //console.log(car(list) + " - " + cdr(list));
-function remberStar(a, list){
-    if(isNull(list)){
-      return [];
-    }
-    //console.log(list);
-    if(nonAtom( car(list))){
-      return cons(remberStar(a, car(list)), remberStar(a, cdr(list)) );
-    }
-    if(isEq(car(list), a)){
-      return remberStar(a, cdr(list));
-    }
-    return cons( car(list), remberStar(a, cdr(list)) );
+
+  return cons(car(list), rember(a, cdr(list)));
+}
+
+function remberOld (a, list){
+  //console.log('rember: {' + a + "}" + list );
+  if(isNull(list)) return [];
+  if(isEq(a, car(list))){
+    return cdr(list);
   }
 
   return cons(car(list), rember(a, cdr(list)));
