@@ -17,7 +17,7 @@ function cons(list1, list2){
   if(isAtom(list1)){
     return cons([list1], list2);
   }
-  return list1.concat(list2);
+  return [list1.concat(list2)];
 }
 
 //
@@ -164,7 +164,46 @@ function insertRStar(old, nu, list){
     return cons(old, cons(nu, insertRStar(old, nu, cdr(list))));
   }
   return cons( car(list), insertRStar(old, nu, cdr(list)) );
+}
 
+
+function insertLStar(old, nu, list){
+  if(isNull(list)){
+    return [];
+  }
+  if(nonAtom( car(list))){
+    return cons(insertLStar(old, nu, car(list)), insertLStar(old, nu, cdr(list)) );
+  }
+
+  if(isEq(car(list), old)){
+    return cons(nu, cons(old, insertLStar(old, nu, cdr(list))));
+  }
+  return cons( car(list), insertLStar(old, nu, cdr(list)) );
+}
+
+function substStar(old, nu, list){
+  if(isNull(list)){
+    return [];
+  }
+  if(nonAtom( car(list))){
+    return cons(substStar(old, nu, car(list)), substStar(old, nu, cdr(list)) );
+  }
+
+  if(isEq(car(list), old)){
+    return cons(nu, substStar(old, nu, cdr(list)));
+  }
+  return cons( car(list), substStar(old, nu, cdr(list)) );
+}
+
+function memberStar(a, list){
+  if(isNull(list)) return false;
+  if(nonAtom(car(list))){
+    return memberStar(a, car(list)) || memberStar(a, cdr(list));
+  }
+  if(isEq(a, car(list))){
+    return true;
+  }
+  return memberStar(a, cdr(list));
 }
 //
 // subst functions
@@ -279,10 +318,10 @@ function printListR(list){
   }
 
   if(isAtom(car(list))){
-    return car(list) + "-" +  printListR(cdr(list));
+    return car(list) + "-" +  printListR(cdr(list)) ;
   }
 
-  return "(" + printListR(car(list)) + ")" + printListR(cdr(list));
+  return "{" + printListR(car(list)) + printListR(cdr(list)) + "}";
 }
 
 //
@@ -296,6 +335,17 @@ function occur(a, list){
   return occur(a,cdr(list));
 }
 
+function occurStar(a, list){
+    if(isNull(list)) return 0;
+    if(nonAtom(car(list))){
+      return occurStar(a, car(list)) + occurStar(a, cdr(list));
+    }
+    if(isEq(a, car(list))){
+      return add1(occurStar(a, cdr(list)));
+    }
+    return occurStar(a, cdr(list));
+}
+
 function isOne(n){
   return n == 1;
 }
@@ -304,6 +354,9 @@ function sub1(n){
   return n-1;
 }
 
+function add1(n){
+  return n + 1;
+}
 function remPick(n, list){
   if(isNull(list)) return [];
   if(isOne(n)){
@@ -342,18 +395,27 @@ var list6 = [1,2,3,4,5,6,7];
 
 var listX = ['thisX', 'that', 'the', 'other'];
 var listX1 = ['1','2','3','4','5','6'];
-var listX2 = [['x','y',['b',['b']],['a','b','c']],['a','b','c',[1,2,3,'b'],'d'], 'b', 'this', 'that'];
+var listX2 = [['x','y',['b',['b',1]],['a','b','c']],['a','b','c',[1,2,3,'b'],'d'], 'b', 'this', 'that'];
+var listX2a = [['x','y',['b','b',1],['a','b','c']],['a','b','c',[1,2,3,'b'],'d'], 'b', 'this', 'that'];
 var listX3 = [];
 var listX4 = ['thisX'];
 var listX5 = 'thisX';
 var listX6 = [1,2,3,4,5,6,7];
 
+//console.log(memberStar(3, listX6));
+console.log(isEqualList(listX2, listX2a));
+console.log(isEqualList(listX3, listX3));
+//printList(listX2);
+//printList(substStar('b', 'Stuff', listX2));
+
+//console.log(occurStar(1, listX2));
+
 //printList(remberStar('z', list2));
 //printList(remberStar('that', list2));
-printList(insertRStar('thisX', "Stuff", list3));
+//printList(insertLStar('x', "Stuff", listX2));
 
 // testing...
-// console.log(leftmost([[[['a']],'b'],'c']));
+// dconsole.log(leftmost([[[['a']],'b'],'c']));
 // console.log(leftmost(list1));
 // console.log(leftmost(list2));
 // console.log(leftmost(list3));
