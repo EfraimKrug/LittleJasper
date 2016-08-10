@@ -7,8 +7,12 @@ function car(list){
 }
 
 function cdr(list){
-  if(isNull(list)) return undefined;
-  if(isAtom(list)) return undefined;
+  if(isNull(list)){
+    return undefined;
+  }
+  if(isAtom(list)){
+    return undefined;
+  }
   return list.slice(1) || [];
 }
 
@@ -17,19 +21,19 @@ function cons(list1, list2){
   if(isAtom(list1)){
     return cons([list1], list2);
   }
-  return [list1.concat(list2)];
+  return list1.concat(list2);
 }
 
 //
-// test atoms
+// some primitive testing...
 //
 function isNull(list){
   if(!list.length) return true;
   return false;
 }
 
-function isAtom(list){
-  return isInt(list) || isChar(list) || isNull(list);
+function isOp(op){
+  return op == '*' || op == '^' || op == '+';
 }
 
 function isInt(atom1){
@@ -44,22 +48,16 @@ function isChar(atom1){
   return er.test(atom1);
 }
 
+function isAtom(list){
+  return isInt(list) || isChar(list) || isNull(list) || isOp(list);
+}
+
 //
 // Equality
 //
 function isEq(atom1, atom2){
   if(!isAtom(atom1) || !isAtom(atom2)) return undefined;
   return atom1 == atom2;
-}
-
-function isEqual(s1, s2){
-  if(isAtom(s1) && isAtom(s2)){
-    return isEq(s1, s2);
-  }
-  if(nonAtom(s1) && nonAtom(s2)){
-    return isEqualList(s1,s2);
-  }
-  return false;
 }
 
 function isEqualList(list1, list2){
@@ -78,7 +76,18 @@ function isEqualList(list1, list2){
 }
 
 
-// not sure about isLat... need to revisit
+function isEqual(s1, s2){
+  if(isAtom(s1) && isAtom(s2)){
+    return isEq(s1, s2);
+  }
+  if(nonAtom(s1) && nonAtom(s2)){
+    return isEqualList(s1,s2);
+  }
+  return false;
+}
+
+
+// returns true for a list - can have depth or null
 function isLat(list){
     //console.log(list);
     if(isNull(list)){
@@ -96,7 +105,6 @@ function isLat(list){
 // sets - members/subsets
 
 function isMember(a, list){
-  console.log(a + ' - ' + list)
   if(!list){
     return false;
   }
@@ -116,49 +124,33 @@ function isMember(a, list){
 //
 // This rember function will remove highest level S-expressions
 //
+
+// remove first identification of member a from list
 function rember (a, list){
-  //console.log('rember: {' + a + "}" + list );
   if(isNull(list)) return [];
-  //if(nonAtom(car(list))){
     if(isEqual(car(list), a)){
         return cdr(list);
     }
     return cons(car(list), rember(a, cdr(list)));
-  //}
-  //if(isEqual(a, car(list))){
-  //  return cdr(list);
-  //}
-
-  return cons(car(list), rember(a, cdr(list)));
 }
 
-function remberOld (a, list){
-  //console.log('rember: {' + a + "}" + list );
-  if(isNull(list)) return [];
-  if(isEq(a, car(list))){
-    return cdr(list);
-  }
-
-  return cons(car(list), rember(a, cdr(list)));
-}
-
+// removes all occurrences of a in list - for flat list
 function multirember (a, list){
-  //console.log('rember: {' + a + "}" + list );
   if(isNull(list)) return [];
   if(isEq(a, car(list))){
     return multirember(a, cdr(list));
   }
-  //console.log(car(list) + " - " + cdr(list));
   return cons(car(list), multirember(a, cdr(list)));
 }
 
-// star functions
+//
+// star functions: multi operates on all flat occurrences,
+//                 Star operates all occurrences on all levels.
 //
 function remberStar(a, list){
   if(isNull(list)){
     return [];
   }
-  //console.log(list);
   if(nonAtom( car(list))){
     return cons(remberStar(a, car(list)), remberStar(a, cdr(list)) );
   }
@@ -221,8 +213,9 @@ function memberStar(a, list){
   }
   return memberStar(a, cdr(list));
 }
+
 //
-// subst functions
+// subst functions (mamash, multi, star)
 //
 function subst(nu,old,list){
     if(isNull(list)) return [];
@@ -285,6 +278,50 @@ function doLeft(elt, cmp, list){
   return cons(elt, cons(cmp, insertG(elt,cmp,cdr(list))));
 }
 
+//
+// notice - this will not work because i want to return f - a
+// function that recurses on insertGR, but i want to define the
+// recursive portion of the function in a function outside the
+// scope of accessibility - i.e. i can't get to insertGR from
+// outside of insertG!
+//
+
+// insert `elt` on the right side of `cmp`
+function doRight2(elt,cmp,list){
+  return cons(cmp, cons(elt, list));
+}
+// insert `elt` on the left side of `cmp`
+function doLeft2(elt, cmp, list){
+  return cons(elt, cons(cmp, list));
+}
+// insert `elt` in place of `cmp`
+function doSubst(elt, cmp, list){
+  return cons(elt, list);
+}
+
+function insertG2(func){
+var f = func;
+return function insertGR(elt, cmp, list){
+      if(isNull(list)) return [];
+      if(isAtom(car(list))){
+          if(isEq(cmp, car(list))){
+            //return cons(elt, cons(cmp, insertL(elt,cmp,cdr(list))));
+            return f(elt,cmp, insertGR(elt, cmp, cdr(list)));
+          } else {
+            x = cons(car(list), insertGR(elt,cmp,cdr(list)));
+            return x;
+          }
+        }
+      else {
+          return cons(insertGR(elt, cmp, car(list)), insertGR(elt,cmp,cdr(list)));
+          //return f(elt,cmp,cdr(list));
+      }
+    }
+}
+
+//
+// for now - this is the best I am going to do
+//
 function insertG(elt, cmp, list, f){
   if(isNull(list)) return [];
   if(isAtom(car(list))){
@@ -373,6 +410,7 @@ function sub1(n){
 function add1(n){
   return n + 1;
 }
+
 function remPick(n, list){
   if(isNull(list)) return [];
   if(isOne(n)){
@@ -397,8 +435,253 @@ function leftmost(list){
   }
   return leftmost(car(list));
 }
+
+
+function isNumbered(list){
+  if(isAtom(list)){
+    return isInt(list);
+  }
+  return isNumbered(car(list)) && isOp(car(cdr(list))) && isNumbered(car(cdr(cdr(list))));
+}
+
+function multiply(x,y){
+  return x * y;
+}
+
+function add(x,y){
+  return x + y;
+}
+
+function exp(x, y){
+  if (y == 0){
+    return 1;
+  }
+  return x * exp(x, sub1(y));
+}
+
+function val(aexp){
+  if(isAtom(aexp) && isInt(aexp)){
+    return aexp;
+  }
+  if(isEq(car(cdr(aexp)), "+")){
+    return add(val(car(aexp)), val(car(cdr(cdr(aexp)))));
+  }
+  if(isEq(car(cdr(aexp)), "*")){
+    return multiply(val(car(aexp)), val(car(cdr(cdr(aexp)))));
+  }
+  if(isEq(car(cdr(aexp)), "^")){
+    return exp(val(car(aexp)), val(car(cdr(cdr(aexp)))));
+  }
+}
+
+// shadows - chapter 7
+// value with helper functions
+var firstExp = function (aexp){
+  return car(aexp);
+}
+
+var secondExp = function (aexp){
+  return car(cdr(cdr(aexp)));
+}
+
+var _operator = function (aexp){
+  return car(cdr(aexp));
+}
+
+function _value(aexp){
+  if(isAtom(aexp) && isInt(aexp)){
+    return aexp;
+  }
+  if(isEq(operator(aexp), "+")){
+    return add(value(firstExp(aexp)), value(secondExp(aexp)));
+  }
+  if(isEq(operator(aexp), "*")){
+    return multiply(value(firstExp(aexp)), value(secondExp(aexp)));
+  }
+  if(isEq(operator(aexp), "^")){
+    return exp(value(firstExp(aexp)), value(secondExp(aexp)));
+  }
+}
+
 //
-// test lists
+// return function
+var operator = function (aexp){
+  var op = car(cdr(aexp));
+  if(isEq(op, "+")){ return add; }
+  if(isEq(op, "*")){ return multiply; }
+  if(isEq(op, "^")){ return exp; }
+}
+
+function value(aexp){
+  if(isAtom(aexp) && isInt(aexp)){
+    return aexp;
+  }
+  var mFunc = operator(aexp);
+  return mFunc(value(firstExp(aexp)), value(secondExp(aexp)));
+}
+
+//
+// friends and relations
+// chapter 8
+
+function isSet(list){
+  if(isNull(list)){
+    return true;
+  }
+
+  if(isMember(car(list), cdr(list))){
+    return false;
+  }
+  return isSet(cdr(list));
+}
+
+function isIntersect(set1, set2){
+  if(isNull(set1)){
+    return false;
+  }
+  return isMember(car(set1), set2) || isIntersect(cdr(set1), set2);
+}
+
+// combine isSet and isIntersect into general function
+function logic(log){
+  if(log == 'OR'){
+    return function logic_or(val1, val2) { return val1 || val2; };
+  }
+  if(log == 'AND'){
+    return function logic_and(val1, val2) { return val1 && val2; };
+  }
+}
+
+function logRet(tf){
+  if(tf) return true;
+  return false;
+}
+
+function isSetGen(stmt, tf){
+  var logi = logic(stmt);
+  var ctf = tf;
+  return function doit(set1, set2){
+    if(isNull(set1)){ return ctf; }
+    return logi(isMember(car(set1), set2), doit(cdr(set1), set2));
+  };
+}
+
+function makeSet(list){
+  if(isNull(list)){
+    return [];
+  }
+  if(isMember(car(list), cdr(list))){
+    return makeSet(cdr(list));
+  }
+  return cons(car(list), makeSet(cdr(list)));
+}
+
+function isSubset(set1, set2){
+  if(isNull(set1)){
+    return true;
+  }
+
+  return isMember(car(set1), set2) && isSubset(cdr(set1), set2);
+}
+
+function eqSet(set1, set2){
+  return isSubset(set1,set2) && isSubset(set2, set1);
+}
+
+function makeIntersection(set1, set2){
+  return makeIntersectionR(makeSet(set1), makeSet(set2));
+}
+
+function makeIntersectionR(set1,set2){
+  if(isNull(set1)){
+    return [];
+  }
+  if(isMember(car(set1), set2)){
+    return(cons(car(set1), makeIntersectionR(cdr(set1), set2)));
+  }
+  return makeIntersectionR(cdr(set1),set2);
+}
+
+function makeUnion(set1, set2){
+  return makeUnionR(makeSet(set1), makeSet(set2));
+}
+
+function makeUnionR(set1,set2){
+  if(isNull(set1)){
+    return set2;
+  }
+  if(isMember(car(set1), set2)){
+    return makeUnionR(cdr(set1), set2);
+  }
+  return cons(car(set1), makeUnionR(cdr(set1),set2));
+}
+
+// pairs - moving on...
+function first(pair){
+  return car(pair);
+}
+
+function second(pair){
+  return car(cdr(pair));
+}
+
+function buildPair(a,b){
+  return cons(a, cons(b, []));
+}
+
+//
+// lambda the ultimate
+// passing functions and using closures
+//
+
+function remberFunc(testFunc){
+  var cmpFunc = testFunc;
+  return function remberInside(a,list){
+    if(isNull(list)){return [];}
+    if(cmpFunc(car(list), a)){
+      return remberInside(a, cdr(list));
+    }
+    return cons(car(list), remberInside(a, cdr(list)));
+  };
+}
+//
+// modeling lambda
+//
+// pass function in
+function equalf(func){
+  var f = func;
+  function feq(val1, val2){
+    if(f(val1,val2)){
+      return true;
+    }
+    return false;
+  }
+  return feq;
+}
+
+// set target
+function equalTarget(target){
+  var trg = target;
+  function cmpTarget(chkVal){
+    if(isEq(trg, chkVal)){
+      return true;
+    }
+    return false;
+  }
+  return cmpTarget;
+}
+
+// set up - pass function in
+//var runEq = equalf(isEq);
+//console.log(runEq('this','this'));
+
+// set up with predefined target
+//var cmpThis = equalTarget("this");
+//console.log(cmpThis("that"));
+//console.log(cmpThis("this"));
+
+//
+// test data
 //
 
 var list = ['and', 'thisX', 'and', 'that', 'the', 'other', 'thisX', 'and'];
@@ -418,10 +701,99 @@ var listX4 = ['thisX'];
 var listX5 = 'thisX';
 var listX6 = [1,2,3,4,5,6,7];
 
-printList(listX2);
-printList(rember(['a','b','c',[1,2,3,'b'],'d'], listX2));
-printList(rember(['x','y',['b',['b',1]],['a','b','c']], listX2));
-printList(rember('x', listX2));
+var numexp1 = [5, '^', 3];
+var numexp2 = [3, '*', [5, '^', 3]];
+var numexp3 = [[5, '+', 3], '*', 2];
+var numexp4 = [2, '*', [5, '^', [2, '+', 1]]];
+
+var set1 = [7,6,6,5,7,2,1,6,5,'this', 'this', 'that', 43,2,1, 'this', 'that'];
+var set2 = [7,7,7,7,7,7,6,5,43,2,1, 'this', 'that'];
+var set3 = [1,1,1,1,1,1,6,5,43,2,1, 'this', 'that'];
+var set4 = [6,7,6,5,43,2,1, 'this', 'that'];
+var set5 = [7,6,5,43,2,1, 'this', 'that',1,1,1,1,4,3];
+var set6 = [7,6,5,43,2,1, 'this', 'that',7,6,5,4,3,2,1];
+var sub1 = [7,6,'this', 'ouch'];
+var seta = ['yikes','help','what', 'happy'];
+var setb = ['yikesX', 'helpX', 'what', 'happyX'];
+
+var a = 'this';
+var b = 'that';
+var c = 1;
+var d = 2;
+
+//
+// using closures to generalize functionality!
+//
+// var insertLeft = insertG2(doLeft2);
+// var insertRight = insertG2(doRight2);
+// var effectSubst = insertG2(doSubst);
+//
+// printList(insertLeft('INSERT', 'help', seta));
+// printList(insertRight('INSERT', 'help', seta));
+// printList(effectSubst('INSERT', 'help', seta));
+
+//printList(insertG('INSERT', 'help', seta, doLeft));
+//printList(insertG('INSERT','help', seta, doRight));
+
+//var rem = remberFunc(isEq);
+//console.log(rem("this", set2));
+
+//console.log(remberFunc(isEq, 6, sub1));
+
+// var p = buildPair(a,b);
+// console.log(first(p));
+// console.log(second(p));
+// var p = buildPair(c,d);
+// console.log(first(p));
+// console.log(second(p));
+//
+console.log(isIntersect(seta, setb));
+var genIntersect = isSetGen("OR", false);
+console.log(genIntersect(seta, setb));
+console.log(isSubset(seta,makeSet(setb)));
+var genSubset = isSetGen("AND", true);
+console.log(genSubset(seta, makeSet(setb)));
+
+//console.log(makeSet(seta));
+//console.log(makeSet(setb));
+//console.log(makeUnion(seta,setb));
+//console.log(makeIntersection(seta, setb));
+
+//console.log("STARTING");
+// x = cons(cdr(set1), sub1);
+// console.log(x);
+// console.log(isNull(x));
+// console.log(isAtom(x));
+// console.log(Array.isArray(x));
+// console.log(x.length);
+// console.log(x.slice(1));
+// console.log(cdr(x));
+//console.log(isMember('7', x));
+//console.log(isMember('ouch', set1));
+//console.log(isMember('this', set1));
+
+//printList(makeSet(set1));
+//printList(makeSet(set2));
+//printList(makeSet(set3));
+//printList(makeSet(set4));
+//printList(makeSet(set5));
+//printList(makeSet(set6));
+
+//console.log(isSet(set1));
+
+
+//console.log(car(cdr(cdr(numexp4))));
+//console.log('125:' + value(numexp1));
+//console.log('375:' + value(numexp2));
+//console.log('16:' + value(numexp3));
+//console.log('250:' + value(numexp4));
+
+//console.log(exp(3,0));
+//console.log(isNumbered([5, '*', 4]))
+//printList(listX2);
+//printList(rember(['a','b','c',[1,2,3,'b'],'d'], listX2));
+//printList(rember(['x','y',['b',['b',1]],['a','b','c']], listX2));
+//printList(rember('x', listX2));
 
 //console.log(memberStar(3, listX6));
 //console.log(isEqualList(listX2, listX2a));
