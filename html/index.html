@@ -1,10 +1,102 @@
 <html>
 <head>
-<script src="../js/LittleJasper01.js"></script> 
+<style>
+#menu {
+  height: 36px;
+}
+
+.cell {
+  width: 85px;
+}
+
+.button {
+  padding: 10px;
+  margin: 10px;
+  color: white;
+  background-color: black;
+  border: 2px solid green;
+}
+</style>
+<script src="../js/LittleJasper01.js"></script>
 <script src="../js/closures.js"></script>
 </head>
 <body>
 <title>Little Jasper</title>
 <h1>Little Jasper</h1>
+<div id=menu> <span id=button1 class=button onclick=doButton1();>LEFT</span>
+              <span id=button2 class=button onclick=doButton2();>RIGHT</span>
+              <span id=button3 class=button onclick=doButton3();>START</span>
+              </div>
+<table border=0>
+<tr><td><div id=div0 class=cell></div></td><td><div id=sep00></div></td><td><div id=div000 class=cell></td></tr>
+<tr><td><div id=div1 class=cell></div></td><td><div id=sep01></div></td><td><div id=div001 class=cell></td></tr>
+<tr><td><div id=div2 class=cell></div></td><td><div id=sep02></div></td><td><div id=div002 class=cell></td></tr>
+<tr><td><div id=div3 class=cell></div></td><td><div id=sep03></div></td><td><div id=div003 class=cell></td></tr>
+<tr><td><div id=div4 class=cell></div></td><td><div id=sep04></div></td><td><div id=div004 class=cell></td></tr>
+<tr><td><div id=div5 class=cell></div></td><td><div id=sep05></div></td><td><div id=div005 class=cell></td></tr>
+<tr><td><div id=div6 class=cell></div></td><td><div id=sep06></div></td><td><div id=div006 class=cell></td></tr>
+<tr><td><div id=div7 class=cell></div></td><td><div id=sep07></div></td><td><div id=div007 class=cell></td></tr>
+<tr><td><div id=div8 class=cell></div></td><td><div id=sep08></div></td><td><div id=div008 class=cell></td></tr>
+<tr><td><div id=div9 class=cell></div></td><td><div id=sep09></div></td><td><div id=div009 class=cell></td></tr>
+</table>
+<div id=returnVal></div>
 </body>
+<script src="../js/buttons.js"></script>
+<script>
+var menuList = ["car", "cdr", "cons", "rember", "insertL", "insertR", "subst" ];
+var menuIndex = 1;
+
+function getNextMenu(){
+      return menuList[menuIndex];
+}
+
+function advanceMenu(){
+  menuIndex++;
+}
+
+function doButton3(){
+  loadNextMenu(getNextMenu());
+}
+
+function setBox(choice, str){
+  var returnVal = document.getElementById("returnVal");
+  returnVal.innerHTML = "'" + choice + "' command: " + str;
+}
+
+function nameToFuncList(name, list1, list2){
+  switch (name){
+    case 'car':     setBox("car","car(list1);");
+                    return car(list1);
+    case 'cdr':     setBox("cdr","cdr(list1);");
+                    return cdr(list1);
+    case 'cons':    setBox("cons","cons(list1,list2);");
+                    return cons(list1,list2);
+    case 'rember':  setBox("rember", "rember(car(cdr(list1)), list1);");
+                    return rember(car(cdr(list1)), list1);
+    case 'insertL': setBox("insertL","insertL(car(cdr(list1)), car(list1), list1);");
+                    return insertL(car(cdr(list1)), car(list1), list1);
+    case 'insertR': setBox("insertR","insertR(car(cdr(list1)), car(list1), list1);");
+                    return insertR(car(cdr(list1)), car(list1), list1);
+    case 'subst':   setBox("subst","subst(\"NewStuff\", \"title3\", list1);");
+                    return subst("NewStuff", "title3", list1);
+
+    default: return null;
+  }
+}
+function loadNextMenu(choice){
+  list001 = wholeRun.titleList;
+  list002 = wholeRun.titleList2;
+  //wholeRun.titleList = nameToFunc(choice, list001);
+  wholeRun.titleList2 = nameToFuncList(choice, list001, list002);
+  //console.log(wholeRun.titleList2);
+  if(choice !== "car"){
+    rebuild();
+  }
+  //wholeRun.titleList = list001;
+  //wholeRun.titleList2 = list002;
+  var button3 = document.getElementById("button3");
+  button3.innerHTML = getNextMenu();
+  advanceMenu();
+}
+</script>
 </html>

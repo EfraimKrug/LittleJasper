@@ -1,11 +1,13 @@
 //
 // lisp: primitives
+// car -
 function car(list){
   if(isNull(list)) return undefined;
   if(isAtom(list)) return undefined;
   return list[0] || [];
 }
 
+// cdr -
 function cdr(list){
   if(isNull(list)){
     return undefined;
@@ -16,6 +18,7 @@ function cdr(list){
   return list.slice(1) || [];
 }
 
+// cons -
 function cons(list1, list2){
   if(list1.length < 1 && list2.length < 1) return [];
   if(isAtom(list1)){
@@ -32,10 +35,6 @@ function isNull(list){
   return false;
 }
 
-function isOp(op){
-  return op == '*' || op == '^' || op == '+';
-}
-
 function isInt(atom1){
   if(Array.isArray(atom1)) return false;
   var er = /^[0-9]+$/;
@@ -44,22 +43,39 @@ function isInt(atom1){
 
 function isChar(atom1){
   if(Array.isArray(atom1)) return false;
-  var er = /^[a-zA-Z]+$/;
+  var er = /^[a-zA-Z]+[0-9?]+$/;
   return er.test(atom1);
+}
+
+//
+// for arithmetic operations
+//
+function isOp(op){
+  return op == '*' || op == '^' || op == '+';
 }
 
 function isAtom(list){
   return isInt(list) || isChar(list) || isNull(list) || isOp(list);
 }
 
+// not isAtom...
+function nonAtom(elt){
+  if(isAtom(elt)){
+    return false;
+  }
+  return true;
+}
 //
 // Equality
 //
+
+// atoms are equal (numeric or alpha)
 function isEq(atom1, atom2){
   if(!isAtom(atom1) || !isAtom(atom2)) return undefined;
   return atom1 == atom2;
 }
 
+// lists are equal
 function isEqualList(list1, list2){
   if(isNull(list1) && isNull(list2)) return true;
   if(isNull(list1)) return false;
@@ -76,6 +92,7 @@ function isEqualList(list1, list2){
 }
 
 
+// whatever - lists or atoms are equal
 function isEqual(s1, s2){
   if(isAtom(s1) && isAtom(s2)){
     return isEq(s1, s2);
@@ -86,8 +103,14 @@ function isEqual(s1, s2){
   return false;
 }
 
+// comparing sets
+function eqSet(set1, set2){
+  return isSubset(set1,set2) && isSubset(set2, set1);
+}
+
 
 // returns true for a list - can have depth or null
+// lat?
 function isLat(list){
     //console.log(list);
     if(isNull(list)){
@@ -103,7 +126,7 @@ function isLat(list){
 }
 
 // sets - members/subsets
-
+// member?
 function isMember(a, list){
   if(!list){
     return false;
@@ -160,6 +183,9 @@ function remberStar(a, list){
   return cons( car(list), remberStar(a, cdr(list)) );
 }
 
+//
+// insert functions - right, left, on substitute...
+//
 function insertRStar(old, nu, list){
   if(isNull(list)){
     return [];
@@ -203,6 +229,7 @@ function substStar(old, nu, list){
   return cons( car(list), substStar(old, nu, cdr(list)) );
 }
 
+// member*?
 function memberStar(a, list){
   if(isNull(list)) return false;
   if(nonAtom(car(list))){
@@ -217,12 +244,14 @@ function memberStar(a, list){
 //
 // subst functions (mamash, multi, star)
 //
+// non star functions...
+//
 function subst(nu,old,list){
     if(isNull(list)) return [];
     if(isEq(old, car(list))){
-      return cons(nu, cdr(list));
+      return cons([nu], cdr(list));
     }
-    return cons(car(list), subst(nu,old,cdr(list)));
+    return cons([car(list)], subst(nu,old,cdr(list)));
 }
 
 function multisubst(nu,old,list){
@@ -269,7 +298,9 @@ function insertR(elt, cmp, list){
   }
 }
 
-
+//
+// pass functions into insert...
+//
 function doRight(elt,cmp,list){
   return cons(cmp, cons(elt, insertG(elt,cmp,cdr(list))));
 }
@@ -305,7 +336,6 @@ return function insertGR(elt, cmp, list){
       if(isNull(list)) return [];
       if(isAtom(car(list))){
           if(isEq(cmp, car(list))){
-            //return cons(elt, cons(cmp, insertL(elt,cmp,cdr(list))));
             return f(elt,cmp, insertGR(elt, cmp, cdr(list)));
           } else {
             x = cons(car(list), insertGR(elt,cmp,cdr(list)));
@@ -314,7 +344,6 @@ return function insertGR(elt, cmp, list){
         }
       else {
           return cons(insertGR(elt, cmp, car(list)), insertGR(elt,cmp,cdr(list)));
-          //return f(elt,cmp,cdr(list));
       }
     }
 }
@@ -338,21 +367,6 @@ function insertG(elt, cmp, list, f){
       return cons(insertG(elt, cmp, car(list), f), insertG(elt,cmp,cdr(list), f));
   }
 }
-
-//console.log(y = insertG('NEW', 'b', listX2, doRight));
-// console.log(insertG('NEW', 'b', listX2,
-//                 function(elt, cmp, list){
-//                   //doLeft:
-//                     return cons(elt, cons(cmp, insertG(elt,cmp,cdr(list))));
-//                 }
-// ));
-//
-// console.log(insertG('NEW', 'b', listX2,
-//                 function(elt, cmp, list){
-//                   //doRight:
-//                     return cons(cmp, cons(elt, insertG(elt,cmp,cdr(list))));
-//                   }
-//                 ));
 
 //
 // utility: printing to console...
@@ -419,13 +433,6 @@ function remPick(n, list){
   return cons(car(list),(remPick(sub1(n), cdr(list))));
 }
 
-function nonAtom(elt){
-  if(isAtom(elt)){
-    return false;
-  }
-  return true;
-}
-
 function leftmost(list){
   if(isAtom(list)){
     return list;
@@ -444,6 +451,9 @@ function isNumbered(list){
   return isNumbered(car(list)) && isOp(car(cdr(list))) && isNumbered(car(cdr(cdr(list))));
 }
 
+//
+// building some arithmetic functionality...
+//
 function multiply(x,y){
   return x * y;
 }
@@ -484,10 +494,16 @@ var secondExp = function (aexp){
   return car(cdr(cdr(aexp)));
 }
 
+//
+// old operator function..
+//
 var _operator = function (aexp){
   return car(cdr(aexp));
 }
 
+//
+// old value function...
+//
 function _value(aexp){
   if(isAtom(aexp) && isInt(aexp)){
     return aexp;
@@ -557,6 +573,11 @@ function logRet(tf){
   return false;
 }
 
+//
+// generalized function that can:
+//      check if set1 is a subset of set2
+//      check if set1 intersects set2
+//
 function isSetGen(stmt, tf){
   var logi = logic(stmt);
   var ctf = tf;
@@ -566,6 +587,9 @@ function isSetGen(stmt, tf){
   };
 }
 
+//
+// corrects set to be unique members only
+//
 function makeSet(list){
   if(isNull(list)){
     return [];
@@ -576,16 +600,13 @@ function makeSet(list){
   return cons(car(list), makeSet(cdr(list)));
 }
 
+// non - lambda logic
 function isSubset(set1, set2){
   if(isNull(set1)){
     return true;
   }
 
   return isMember(car(set1), set2) && isSubset(cdr(set1), set2);
-}
-
-function eqSet(set1, set2){
-  return isSubset(set1,set2) && isSubset(set2, set1);
 }
 
 function makeIntersection(set1, set2){
@@ -680,9 +701,102 @@ function equalTarget(target){
 //console.log(cmpThis("that"));
 //console.log(cmpThis("this"));
 
+function Xmultirember (a, list){
+  if(isNull(list)) return [];
+  if(isEq(a, car(list))){
+    return Xmultirember(a, cdr(list));
+  }
+  return cons(car(list), Xmultirember(a, cdr(list)));
+}
 //
 // test data
 //
+
+function doXmultirember(a){
+    var a = a;
+    return function doit(list){
+        if(isNull(list)) return [];
+        if(isEq(a, car(list))){
+          return doit(cdr(list));
+        }
+        return cons(car(list), doit(cdr(list)));
+    };
+}
+
+var lst = ["a", "b", "c", "curry", "e", "curry", "g", "curry"];
+var a = "curry";
+
+var remberCurry = doXmultirember(a);
+//console.log(remberCurry(lst));
+//console.log(Xmultirember(a,lst));
+// now wrap the function:
+//
+// chapter 10: what is the value of all this?
+//
+// an entry is a pair of lists -
+// each list has the same number of entries
+
+//
+// e.g.
+//
+var entry = {
+      name: ["entree", "dessert"],
+      entry:["steak", "pie"]
+};
+
+function buildEntry(list1, list2){
+  if(list1.length !== list2.length){
+    console.log("Sets do not have equal length.");
+  }
+  return {
+    name: list1,
+    entry: list2
+  };
+}
+
+function buildLookupName(entryList){
+  var entry = entryList;
+  function lookupName(target, names, entries){
+        if(isNull(names)){
+          return "";
+        }
+
+        if(isEq(car(names), target)){
+          return car(entries);
+        }
+        return lookupName(target, cdr(names), cdr(entries));
+    };
+    return function lookup(target){
+      return lookupName(target, entry.name, entry.entry);
+    }
+  }
+
+function extendTable(entry, entries){
+  //entries.name.push(entry.name);
+  entries.name = cons(entries.name,entry.name);
+  entries.entry = cons(entries.entry, entry.entry);
+  //entries.entry.push(entry.entry);
+}
+
+var lst1 = ["name1", "name2", "name3", "name4"];
+var lst2 = ["entry1", "entry2", "entry3", "entry4"];
+var be = buildEntry(lst1, lst2);
+var lookupName = buildLookupName(be);
+console.log(lookupName("name"));
+
+var nuEntry = {
+  name: "nameX",
+  entry: "entryX"
+}
+
+extendTable(nuEntry, be);
+console.log(be.name);
+//var lookupName = buildLookupName(be);
+//console.log(lookupName("name4", 0));
+//console.log(be);
+//console.log(be.name[0]);
+//console.log(be.entry[0]);
+
 
 var list = ['and', 'thisX', 'and', 'that', 'the', 'other', 'thisX', 'and'];
 var list1 = ['1','2','3','4','5','6'];
@@ -747,12 +861,14 @@ var d = 2;
 // console.log(first(p));
 // console.log(second(p));
 //
-console.log(isIntersect(seta, setb));
-var genIntersect = isSetGen("OR", false);
-console.log(genIntersect(seta, setb));
-console.log(isSubset(seta,makeSet(setb)));
-var genSubset = isSetGen("AND", true);
-console.log(genSubset(seta, makeSet(setb)));
+// testing general function - isSetGen
+//
+// console.log(isIntersect(seta, setb));
+// var genIntersect = isSetGen("OR", false);
+// console.log(genIntersect(seta, setb));
+// console.log(isSubset(seta,makeSet(setb)));
+// var genSubset = isSetGen("AND", true);
+// console.log(genSubset(seta, makeSet(setb)));
 
 //console.log(makeSet(seta));
 //console.log(makeSet(setb));
